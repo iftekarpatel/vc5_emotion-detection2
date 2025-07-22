@@ -69,7 +69,7 @@ def main() -> None:
     """Main function to orchestrate model evaluation."""
     try:
         model = load_model("models/random_forest_model.pkl")
-        X_test, y_test = load_test_data("data/interim/test_bow.csv")
+        X_test, y_test = load_test_data("data/interim/test_tfidf.csv")
         metrics = evaluate_model(model, X_test, y_test)
         save_metrics(metrics, "reports/evaluation_metrics.json")
         logging.info("Model evaluation pipeline completed successfully")

@@ -22,20 +22,22 @@ stages:
     - data\processed\train.csv
     - src\features\feature_engg.py
     outs:
-    - data\interim\test_bow.csv
-    - data\interim\train_bow.csv
+    - data\interim\test_tfidf.csv
+    - data\interim\train_tfidf.csv
   modelling:
     cmd: python src\models\modelling.py
     deps:
-    - data\interim\train_bow.csv
+    - data\interim\train_tfidf.csv
     - src\models\modelling.py
     outs:
     - models\random_forest_model.pkl
   model_evaluation:
     cmd: python src\models\model_evaluation.py
     deps:
-    - data\interim\test_bow.csv
+    - data\interim\test_tfidf.csv
     - models\random_forest_model.pkl
     - src\models\model_evaluation.py
-    outs:
-    - reports\evaluation_metrics.json
+  
+    metrics:
+      - reports\evaluation_metrics.json
+  

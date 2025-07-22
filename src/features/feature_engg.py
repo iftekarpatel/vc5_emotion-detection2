@@ -4,7 +4,7 @@ import logging
 import yaml
 import os
 from typing import Tuple
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 # Configure logging
 logging.basicConfig(
@@ -45,14 +45,14 @@ def extract_features_and_labels(df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarra
         logging.error("Error extracting features and labels: %s", e)
         raise
 
-def vectorize_data(X_train: np.ndarray, X_test: np.ndarray, max_features: int) -> Tuple[np.ndarray, np.ndarray, CountVectorizer]:
-    """Vectorize text data using Bag of Words."""
+def vectorize_data(X_train: np.ndarray, X_test: np.ndarray, max_features: int) -> Tuple[np.ndarray, np.ndarray, TfidfVectorizer]:
+    """Vectorize text data using TF-IDF."""
     try:
-        vectorizer = CountVectorizer(max_features=max_features)
-        X_train_bow = vectorizer.fit_transform(X_train)
-        X_test_bow = vectorizer.transform(X_test)
-        logging.info("Text data vectorized using Bag of Words")
-        return X_train_bow, X_test_bow, vectorizer
+        vectorizer = TfidfVectorizer(max_features=max_features)
+        X_train_tfidf = vectorizer.fit_transform(X_train)
+        X_test_tfidf = vectorizer.transform(X_test)
+        logging.info("Text data vectorized using TF-IDF")
+        return X_train_tfidf, X_test_tfidf, vectorizer
     except Exception as e:
         logging.error("Error vectorizing data: %s", e)
         raise
@@ -81,10 +81,10 @@ def main() -> None:
         X_train, y_train = extract_features_and_labels(train_data)
         X_test, y_test = extract_features_and_labels(test_data)
 
-        X_train_bow, X_test_bow, _ = vectorize_data(X_train, X_test, max_features)
+        X_train_tfidf, X_test_tfidf, _ = vectorize_data(X_train, X_test, max_features)
 
-        save_feature_data(X_train_bow, y_train, "data/interim/train_bow.csv")
-        save_feature_data(X_test_bow, y_test, "data/interim/test_bow.csv")
+        save_feature_data(X_train_tfidf, y_train, "data/interim/train_tfidf.csv")
+        save_feature_data(X_test_tfidf, y_test, "data/interim/test_tfidf.csv")
 
         logging.info("Feature engineering pipeline completed successfully")
     except Exception as e:
