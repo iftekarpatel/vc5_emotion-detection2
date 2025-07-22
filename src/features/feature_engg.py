@@ -1,42 +1,95 @@
 import numpy as np
 import pandas as pd
-
-import re
-import nltk
-import string
-from nltk.corpus import stopwords
-from nltk.stem import SnowballStemmer, WordNetLemmatizer
-from sklearn.feature_extraction.text import CountVectorizer
+import logging
+import yaml
 import os
+from typing import Tuple
+from sklearn.feature_extraction.text import CountVectorizer
 
-# Load processed training and testing data, dropping rows with missing 'content'
-train_data = pd.read_csv("data/processed/train.csv").dropna(subset=['content'])
-test_data = pd.read_csv("data/processed/test.csv").dropna(subset=['content'])
+# Configure logging
+logging.basicConfig(
+    filename="logs/feature_engg.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
-# Extract features and labels from training and testing data
-X_train = train_data['content'].values
-y_train = train_data['sentiment'].values
+def load_params(params_path: str) -> dict:
+    """Load parameters from a YAML file."""
+    try:
+        with open(params_path, "r") as file:
+            params = yaml.safe_load(file)
+        logging.info("Parameters loaded successfully from %s", params_path)
+        return params
+    except Exception as e:
+        logging.error("Error loading parameters: %s", e)
+        raise
 
-X_test = test_data['content'].values
-y_test = test_data['sentiment'].values
+def load_data(path: str) -> pd.DataFrame:
+    """Load data from a CSV file and drop rows with missing 'content'."""
+    try:
+        df = pd.read_csv(path).dropna(subset=['content'])
+        logging.info("Data loaded from %s", path)
+        return df
+    except Exception as e:
+        logging.error("Error loading data from %s: %s", path, e)
+        raise
 
-# Initialize Bag of Words vectorizer
-vectorizer = CountVectorizer()
+def extract_features_and_labels(df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
+    """Extract features and labels from DataFrame."""
+    try:
+        X = df['content'].values
+        y = df['sentiment'].values
+        logging.info("Features and labels extracted")
+        return X, y
+    except Exception as e:
+        logging.error("Error extracting features and labels: %s", e)
+        raise
 
-# Fit the vectorizer on training data and transform it to feature vectors
-X_train_bow = vectorizer.fit_transform(X_train)
+def vectorize_data(X_train: np.ndarray, X_test: np.ndarray, max_features: int) -> Tuple[np.ndarray, np.ndarray, CountVectorizer]:
+    """Vectorize text data using Bag of Words."""
+    try:
+        vectorizer = CountVectorizer(max_features=max_features)
+        X_train_bow = vectorizer.fit_transform(X_train)
+        X_test_bow = vectorizer.transform(X_test)
+        logging.info("Text data vectorized using Bag of Words")
+        return X_train_bow, X_test_bow, vectorizer
+    except Exception as e:
+        logging.error("Error vectorizing data: %s", e)
+        raise
 
-# Transform test data using the fitted vectorizer
-X_test_bow = vectorizer.transform(X_test)
+def save_feature_data(X_bow, y, path: str) -> None:
+    """Save feature-engineered data to CSV."""
+    try:
+        df = pd.DataFrame(X_bow.toarray())
+        df['sentiment'] = y
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        df.to_csv(path, index=False)
+        logging.info("Feature data saved to %s", path)
+    except Exception as e:
+        logging.error("Error saving feature data to %s: %s", path, e)
+        raise
 
-# Convert feature vectors to DataFrames and add label columns
-train_df = pd.DataFrame(X_train_bow.toarray())
-train_df['sentiment'] = y_train
+def main() -> None:
+    """Main function to orchestrate feature engineering."""
+    try:
+        params = load_params("params.yaml")
+        max_features = params['feature_engg']['max_features']
 
-test_df = pd.DataFrame(X_test_bow.toarray())
-test_df['sentiment'] = y_test
+        train_data = load_data("data/processed/train.csv")
+        test_data = load_data("data/processed/test.csv")
 
-# Save the feature-engineered DataFrames to interim CSV files
-train_df.to_csv("data/interim/train_bow.csv", index=False)
-test_df.to_csv("data/interim/test_bow.csv", index=False)
+        X_train, y_train = extract_features_and_labels(train_data)
+        X_test, y_test = extract_features_and_labels(test_data)
 
+        X_train_bow, X_test_bow, _ = vectorize_data(X_train, X_test, max_features)
+
+        save_feature_data(X_train_bow, y_train, "data/interim/train_bow.csv")
+        save_feature_data(X_test_bow, y_test, "data/interim/test_bow.csv")
+
+        logging.info("Feature engineering pipeline completed successfully")
+    except Exception as e:
+        logging.error("Feature engineering pipeline failed: %s", e)
+        raise
+
+if __name__ == "__main__":
+    main()
