@@ -1,0 +1,41 @@
+stages:
+  data_ingestion:
+    cmd: python src\data\data_ingestion.py
+    deps:
+    - src\data\data_ingestion.py
+    outs:
+    - data\raw\test.csv
+    - data\raw\train.csv
+  data_preprocessing:
+    cmd: python src\data\data_preprocessing.py
+    deps:
+    - data\raw\test.csv
+    - data\raw\train.csv
+    - src\data\data_preprocessing.py
+    outs:
+    - data\processed\test.csv
+    - data\processed\train.csv
+  feature_engg:
+    cmd: python src\features\feature_engg.py
+    deps:
+    - data\processed\test.csv
+    - data\processed\train.csv
+    - src\features\feature_engg.py
+    outs:
+    - data\interim\test_bow.csv
+    - data\interim\train_bow.csv
+  modelling:
+    cmd: python src\models\modelling.py
+    deps:
+    - data\interim\train_bow.csv
+    - src\models\modelling.py
+    outs:
+    - models\random_forest_model.pkl
+  model_evaluation:
+    cmd: python src\models\model_evaluation.py
+    deps:
+    - data\interim\test_bow.csv
+    - models\random_forest_model.pkl
+    - src\models\model_evaluation.py
+    outs:
+    - reports\evaluation_metrics.json
